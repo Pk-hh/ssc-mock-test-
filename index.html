@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>SSC Exam Portal - Premium</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- KaTeX for Math -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 900: '#1e3a8a' },
+                        ssc: { dark: '#111827', accent: '#2563eb' }
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+                        'card': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; user-select: none; -webkit-user-select: none; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+
+        /* Exam Status Colors - Modernized */
+        .st-answered { background-color: #10b981; color: white; border: none !important; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3); }
+        .st-not-answered { background-color: #ef4444; color: white; border: none !important; box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3); }
+        .st-marked { background-color: #8b5cf6; color: white; border-radius: 50%; border: none !important; box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3); }
+        .st-marked-answered { background-color: #8b5cf6; color: white; border-radius: 50%; position: relative; border: none !important; box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3); }
+        .st-marked-answered::after { content: '✓'; position: absolute; bottom: -2px; right: -2px; font-size: 10px; color: #10b981; font-weight: 900; background: white; border-radius: 50%; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .st-not-visited { background-color: white; border: 1px solid #e2e8f0; color: #64748b; }
+        .st-current { border: 2px solid #2563eb !important; color: #2563eb; transform: scale(1.1); font-weight: 800; }
+
+        .status-btn { 
+            width: 40px; height: 40px; 
+            display: flex; align-items: center; justify-content: center; 
+            font-weight: 600; font-size: 0.9rem; 
+            border-radius: 8px; /* Softer shape */
+            cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+        .status-btn:active { transform: scale(0.95); }
+
+        /* Option Card Styling */
+        .option-card {
+            transition: all 0.2s ease;
+            border: 1px solid #e2e8f0;
+        }
+        .option-card:hover { border-color: #3b82f6; background-color: #eff6ff; }
+        .option-card.selected { 
+            border-color: #2563eb; 
+            background-color: #eff6ff; 
+            box-shadow: 0 0 0 1px #2563eb;
+        }
+
+        /* Watermark */
+        #exam-watermark { position: fixed; inset: 0; pointer-events: none; z-index: 9999; opacity: 0.06; display: grid; grid-template-columns: repeat(3, 1fr); gap: 120px; overflow: hidden; transform: rotate(-15deg) scale(1.2); }
+        .watermark-item { font-size: 18px; font-weight: 900; color: #1e293b; white-space: nowrap; text-align: center; user-select: none; }
+
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        
+        /* Result Circular Progress */
+        .circular-chart { display: block; margin: 0 auto; max-width: 80%; max-height: 250px; }
+        .circle-bg { fill: none; stroke: #eee; stroke-width: 3.8; }
+        .circle { fill: none; stroke-width: 2.8; stroke-linecap: round; animation: progress 1s ease-out forwards; }
+        @keyframes progress { 0% { stroke-dasharray: 0 100; } }
+        .percentage { fill: #666; font-family: sans-serif; font-weight: bold; font-size: 0.5em; text-anchor: middle; }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden bg-slate-50 text-slate-800">
+
+    <!-- 1. SETUP SCREEN -->
+    <div id="screen-setup" class="flex-grow flex flex-col overflow-y-auto bg-gradient-to-br from-slate-50 to-blue-50">
+        <header class="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 px-6 py-4">
+            <div class="max-w-7xl mx-auto flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-500/30">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-xl leading-none text-slate-800">Exam Portal</h1>
+                        <p class="text-xs text-slate-500 font-medium">SSC Head Constable (Min)</p>
+                    </div>
+                </div>
+                <div class="hidden sm:flex items-center gap-3 bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
+                    <div class="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
+                    <p class="text-xs font-semibold text-slate-600">System Online</p>
+                </div>
+            </div>
+        </header>
+
+        <div class="max-w-7xl mx-auto w-full p-4 sm:p-8 animate-fade-in">
+            <!-- Hero Section -->
+            <div class="mb-10 text-center sm:text-left">
+                <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">Available Tests</h2>
+                <p class="text-slate-500 mt-2 text-lg">Select a mock test to begin your preparation journey.</p>
+            </div>
+
+            <div id="resume-alert" class="hidden mb-8 bg-white border-l-4 border-amber-400 p-4 rounded-r-xl shadow-md cursor-pointer hover:shadow-lg transition-all transform hover:-translate-y-0.5 group">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="bg-amber-100 p-3 rounded-full text-amber-600 group-hover:bg-amber-200 transition"><i class="fas fa-history text-xl"></i></div>
+                        <div>
+                            <p class="text-base text-slate-800 font-bold">Incomplete Session Detected</p>
+                            <p class="text-sm text-slate-500 mt-0.5">You have an unfinished exam. Click to resume.</p>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-right text-slate-300 group-hover:text-amber-500 transition"></i>
+                </div>
+            </div>
+
+            <div id="paper-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <!-- Papers injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. INSTRUCTIONS SCREEN -->
+    <div id="screen-instructions" class="hidden fixed inset-0 bg-slate-50 z-50 flex flex-col animate-fade-in">
+        <header class="bg-white border-b border-slate-200 p-4 flex justify-between items-center shadow-sm">
+            <div class="flex items-center gap-2 text-blue-700">
+                <i class="fas fa-book-open text-xl"></i>
+                <h2 class="font-bold text-lg">Instructions</h2>
+            </div>
+            <button id="btn-close-inst" class="text-slate-400 hover:text-slate-700 hover:bg-slate-100 p-2 rounded-full transition"><i class="fas fa-times text-xl"></i></button>
+        </header>
+        
+        <div class="flex-grow overflow-y-auto p-4 sm:p-8 max-w-5xl mx-auto w-full">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 mb-6">
+                <h1 class="text-3xl font-bold text-slate-800 mb-2" id="inst-paper-name">Paper Name</h1>
+                <div class="h-1 w-20 bg-blue-600 rounded-full mb-6"></div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-blue-50 border border-blue-100 p-5 rounded-xl">
+                        <h3 class="font-bold text-blue-900 mb-3 flex items-center gap-2"><i class="fas fa-info-circle"></i> Test Details</h3>
+                        <ul class="space-y-2 text-sm text-blue-800" id="inst-details-list">
+                            <!-- Details injected here -->
+                        </ul>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 p-5 rounded-xl">
+                        <h3 class="font-bold text-slate-900 mb-3 flex items-center gap-2"><i class="fas fa-palette"></i> Color Legend</h3>
+                        <div class="grid grid-cols-2 gap-3 text-xs">
+                            <div class="flex items-center gap-2"><span class="w-3 h-3 bg-green-500 rounded-sm"></span> Answered</div>
+                            <div class="flex items-center gap-2"><span class="w-3 h-3 bg-red-500 rounded-sm"></span> Not Answered</div>
+                            <div class="flex items-center gap-2"><span class="w-3 h-3 bg-purple-500 rounded-full"></span> Marked</div>
+                            <div class="flex items-center gap-2"><span class="w-3 h-3 border border-slate-400 rounded-sm"></span> Not Visited</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <h3 class="font-bold text-slate-800 mb-3">General Guidelines:</h3>
+                <ul class="list-disc list-inside space-y-3 text-slate-600 text-sm sm:text-base leading-relaxed mb-6">
+                    <li>The clock will be set at the server. The countdown timer in the top right corner of screen will display the time remaining for you to complete the exam.</li>
+                    <li>The question palette displayed on the right side of screen will show the status of each question.</li>
+                    <li>Clicking on a question number in the palette will open that question directly.</li>
+                    <li>You can navigate between sections using the tabs at the top.</li>
+                    <li><strong>Proctoring is active:</strong> The exam will enter <strong>Full Screen</strong> mode. Exiting full screen or switching tabs will result in a warning.</li>
+                </ul>
+
+                <div class="flex items-center gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                    <input type="checkbox" id="agree-chk" class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer">
+                    <label for="agree-chk" class="text-slate-700 text-sm font-medium cursor-pointer select-none">I have read and understood the instructions. I agree to abide by the exam rules.</label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="p-4 border-t bg-white flex justify-center sm:justify-end shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+            <button id="btn-start-exam" class="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-10 py-3 rounded-xl font-bold text-lg shadow-lg shadow-blue-500/30 transition transform hover:scale-[1.02]">Start Exam <i class="fas fa-arrow-right ml-2"></i></button>
+        </div>
+    </div>
+
+    <!-- 3. EXAM SCREEN -->
+    <div id="screen-exam" class="hidden h-full flex-col bg-slate-100">
+        <!-- Header -->
+        <header class="bg-white h-16 flex justify-between items-center px-4 sm:px-6 shadow-sm z-20 flex-shrink-0 border-b border-slate-200">
+            <div class="flex items-center gap-4">
+                <div class="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-sm">S</div>
+                <div class="font-bold text-lg text-slate-800 hidden sm:block truncate max-w-[200px]" id="exam-name-display">Mock Test</div>
+            </div>
+            
+            <div class="flex items-center gap-3 sm:gap-6">
+                <!-- Timer -->
+                <div class="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
+                    <i class="far fa-clock text-slate-500"></i>
+                    <span id="timer-display" class="font-mono font-bold text-slate-800 text-lg tracking-wide">00:00:00</span>
+                </div>
+                
+                <button id="btn-submit-main" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg text-sm font-bold transition shadow-sm hover:shadow">Submit</button>
+            </div>
+        </header>
+
+        <!-- Sub Header (Toolbar) -->
+        <div class="bg-white border-b border-slate-200 px-4 py-2 flex justify-between items-center flex-shrink-0 shadow-sm overflow-x-auto gap-4 scrollbar-hide">
+            <div class="flex gap-2" id="subject-tabs">
+                <!-- Injected via JS -->
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="hidden sm:flex items-center bg-slate-100 rounded-lg p-1 border border-slate-200">
+                    <button id="btn-font-dec" class="w-8 h-7 flex items-center justify-center text-slate-600 hover:bg-white hover:shadow-sm rounded transition text-xs font-bold">A-</button>
+                    <div class="w-px h-4 bg-slate-300 mx-1"></div>
+                    <button id="btn-font-inc" class="w-8 h-7 flex items-center justify-center text-slate-600 hover:bg-white hover:shadow-sm rounded transition text-xs font-bold">A+</button>
+                </div>
+                <button id="btn-show-qp" class="text-slate-600 hover:bg-slate-100 px-3 py-1.5 rounded-lg text-xs font-bold border border-transparent hover:border-slate-200 transition whitespace-nowrap"><i class="fas fa-file-alt mr-1.5"></i> Question Paper</button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-grow flex overflow-hidden relative">
+            
+            <!-- Left: Question Area -->
+            <div class="flex-1 flex flex-col overflow-hidden relative z-0">
+                <div id="exam-watermark"></div> <!-- Security Watermark -->
+                
+                <div class="flex-grow overflow-y-auto p-4 sm:p-6 lg:p-8 custom-scrollbar" id="question-container">
+                    <div class="max-w-5xl mx-auto w-full bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 min-h-[400px]">
+                        
+                        <!-- Question Header -->
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-slate-100 pb-4">
+                            <div class="flex items-center gap-3">
+                                <span class="bg-blue-600 text-white text-xs font-bold px-2.5 py-1 rounded-md shadow-sm">Q.<span id="q-num">1</span></span>
+                                <span id="section-badge" class="text-slate-500 text-xs font-bold uppercase tracking-wider bg-slate-100 px-2 py-1 rounded">Section</span>
+                            </div>
+                            <div class="flex gap-3 bg-slate-50 px-3 py-1 rounded-full border border-slate-200">
+                                <span class="text-xs text-green-600 font-bold flex items-center"><i class="fas fa-plus mr-1 text-[10px]"></i><span id="mark-pos">1.0</span></span>
+                                <div class="w-px h-3 bg-slate-300"></div>
+                                <span class="text-xs text-red-500 font-bold flex items-center"><i class="fas fa-minus mr-1 text-[10px]"></i><span id="mark-neg">0.5</span></span>
+                            </div>
+                        </div>
+
+                        <!-- Question Content -->
+                        <div id="question-area" class="mb-8">
+                            <div id="question-text" class="text-slate-800 leading-8 text-base sm:text-lg font-medium selection:bg-blue-100"></div>
+                        </div>
+
+                        <!-- Options -->
+                        <div id="options-area" class="grid grid-cols-1 gap-4 max-w-3xl">
+                            <!-- Injected -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="bg-white border-t border-slate-200 p-3 sm:px-6 flex flex-wrap justify-between items-center gap-3 z-10 shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
+                    <div class="flex gap-3 w-full sm:w-auto order-2 sm:order-1">
+                        <button id="btn-review" class="flex-1 sm:flex-none px-4 py-2.5 bg-white border border-purple-200 text-purple-700 rounded-lg hover:bg-purple-50 hover:border-purple-300 text-sm font-bold transition shadow-sm">Review</button>
+                        <button id="btn-clear" class="flex-1 sm:flex-none px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 hover:border-slate-300 text-sm font-bold transition shadow-sm">Clear</button>
+                    </div>
+                    <div class="flex gap-3 w-full sm:w-auto justify-end order-1 sm:order-2">
+                        <button id="btn-prev" class="px-6 py-2.5 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 text-sm font-bold transition">Back</button>
+                        <button id="btn-next" class="px-8 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-bold shadow-md hover:shadow-lg transition transform active:scale-95">Next</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Sidebar (Palette) -->
+            <div class="hidden lg:flex w-80 bg-white border-l border-slate-200 flex-col shadow-xl z-20">
+                <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
+                    <div class="h-10 w-10 bg-slate-200 rounded-full flex items-center justify-center text-slate-500 shadow-inner"><i class="fas fa-user"></i></div>
+                    <div>
+                        <div class="text-sm font-bold text-slate-800">Candidate</div>
+                        <div class="text-xs text-slate-500 font-mono">ID: 2025</div>
+                    </div>
+                </div>
+                
+                <div class="p-4 grid grid-cols-2 gap-y-3 gap-x-2 text-[11px] font-medium text-slate-600 border-b border-slate-100">
+                    <div class="flex items-center gap-2"><span class="w-3 h-3 bg-green-500 rounded-sm shadow-sm"></span> Answered</div>
+                    <div class="flex items-center gap-2"><span class="w-3 h-3 bg-red-500 rounded-sm shadow-sm"></span> Not Ans</div>
+                    <div class="flex items-center gap-2"><span class="w-3 h-3 bg-white border border-slate-300 rounded-sm"></span> Not Visited</div>
+                    <div class="flex items-center gap-2"><span class="w-3 h-3 bg-purple-500 rounded-full shadow-sm"></span> Marked</div>
+                </div>
+
+                <div class="flex-grow overflow-y-auto p-5 custom-scrollbar bg-slate-50/30">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Section Status</span>
+                        <span class="text-xs font-bold text-blue-600 uppercase tracking-widest" id="palette-section-title">Section</span>
+                    </div>
+                    <div id="question-grid" class="grid grid-cols-5 gap-3">
+                        <!-- Palette Buttons -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Palette Button -->
+        <button id="btn-palette-mob" class="lg:hidden fixed bottom-24 right-5 h-14 w-14 bg-gradient-to-tr from-blue-600 to-indigo-600 text-white rounded-2xl shadow-lg shadow-blue-500/40 flex items-center justify-center z-30 transition transform active:scale-90">
+            <i class="fas fa-th-large text-xl"></i>
+        </button>
+    </div>
+
+    <!-- 4. RESULT SCREEN -->
+    <div id="screen-result" class="hidden flex-grow flex-col bg-slate-50 overflow-y-auto p-4 sm:p-8 animate-fade-in">
+        <div class="max-w-5xl mx-auto w-full">
+            <header class="text-center mb-10">
+                <div class="inline-block p-4 rounded-full bg-white shadow-lg mb-4">
+                    <i class="fas fa-trophy text-4xl text-yellow-400"></i>
+                </div>
+                <h2 class="text-3xl font-extrabold text-slate-900 mb-2">Test Completed!</h2>
+                <p class="text-slate-500 text-lg" id="res-exam-title">Mock Test</p>
+            </header>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                <!-- Score Card -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center justify-center relative overflow-hidden">
+                    <div class="absolute top-0 w-full h-1 bg-blue-500"></div>
+                    <p class="text-slate-500 font-bold text-sm uppercase tracking-wide mb-4">Total Score</p>
+                    <div class="relative">
+                        <!-- Simple SVG Circle Progress placeholder -->
+                        <svg viewBox="0 0 36 36" class="circular-chart w-32 h-32">
+                            <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <path class="circle" stroke="#3b82f6" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" id="score-circle" />
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <span class="text-3xl font-black text-slate-800" id="res-score">0</span>
+                            <span class="text-xs text-slate-400 font-bold" id="res-total-marks">/ 100</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 gap-6 col-span-2">
+                    <div class="grid grid-cols-2 gap-6 h-full">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-center relative overflow-hidden group hover:border-green-300 transition">
+                            <div class="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition"><i class="fas fa-check-circle text-6xl text-green-500"></i></div>
+                            <p class="text-green-600 font-bold text-sm uppercase tracking-wide mb-1">Correct</p>
+                            <p class="text-4xl font-black text-slate-800" id="res-correct">0</p>
+                            <p class="text-xs text-slate-400 mt-2">Questions answered correctly</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-center relative overflow-hidden group hover:border-red-300 transition">
+                            <div class="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition"><i class="fas fa-times-circle text-6xl text-red-500"></i></div>
+                            <p class="text-red-500 font-bold text-sm uppercase tracking-wide mb-1">Incorrect</p>
+                            <p class="text-4xl font-black text-slate-800" id="res-wrong">0</p>
+                            <p class="text-xs text-slate-400 mt-2">Questions answered incorrectly</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="bg-slate-50 px-6 py-4 border-b border-slate-100">
+                    <h3 class="font-bold text-slate-700">Detailed Analysis</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-white text-slate-500 uppercase text-xs border-b border-slate-100">
+                            <tr>
+                                <th class="p-5 font-bold">Q.No</th>
+                                <th class="p-5 font-bold">Status</th>
+                                <th class="p-5 font-bold">Your Answer</th>
+                            </tr>
+                        </thead>
+                        <tbody id="result-table-body" class="divide-y divide-slate-50">
+                            <!-- Rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="mt-10 flex justify-center gap-4 pb-10">
+                <button id="btn-home" class="px-8 py-3 bg-white text-slate-700 border border-slate-300 rounded-xl font-bold hover:bg-slate-50 transition shadow-sm">Home</button>
+                <button id="btn-retake" class="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/30">Retake Test</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    
+    <!-- Submit Confirmation -->
+    <div id="modal-submit" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center transform transition-all scale-100">
+            <div class="h-16 w-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner"><i class="fas fa-flag-checkered"></i></div>
+            <h3 class="text-xl font-bold text-slate-900 mb-2">Finish Exam?</h3>
+            <p class="text-slate-500 text-sm mb-8 leading-relaxed">You still have time remaining. Are you sure you want to submit your answers? This action cannot be undone.</p>
+            <div class="flex gap-3">
+                <button id="btn-cancel-submit" class="flex-1 py-2.5 border border-slate-300 rounded-xl text-slate-600 hover:bg-slate-50 font-bold transition">Cancel</button>
+                <button id="btn-confirm-submit" class="flex-1 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold shadow-lg shadow-blue-500/30 transition">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Warning Modal (Proctoring) -->
+    <div id="modal-warning" class="hidden fixed inset-0 bg-red-900/90 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center border-t-8 border-red-500 animate-bounce-short">
+            <div class="h-20 w-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-5 text-3xl"><i class="fas fa-exclamation-triangle"></i></div>
+            <h3 class="text-2xl font-black text-slate-900 mb-2">Security Warning</h3>
+            <p class="text-slate-600 mb-6">Full Screen exit or tab switching is detected. Your activity is being monitored.</p>
+            <div class="bg-red-50 text-red-700 px-4 py-2 rounded-lg font-bold text-sm mb-8 inline-block">
+                Warning <span id="warning-count">1</span> of 3
+            </div>
+            <button id="btn-resume-warning" class="w-full px-6 py-3.5 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition shadow-lg shadow-red-500/30">Resume Exam</button>
+        </div>
+    </div>
+
+    <!-- Question Paper Modal -->
+    <div id="modal-qp" class="hidden fixed inset-0 bg-white z-50 flex flex-col animate-fade-in">
+        <header class="bg-slate-900 text-white p-4 flex justify-between items-center shadow-md">
+            <div class="flex items-center gap-3">
+                <i class="fas fa-file-alt text-slate-400"></i>
+                <h3 class="font-bold text-lg">Full Question Paper</h3>
+            </div>
+            <button id="btn-close-qp" class="bg-slate-800 hover:bg-slate-700 text-white w-8 h-8 rounded-full flex items-center justify-center transition"><i class="fas fa-times"></i></button>
+        </header>
+        <div id="qp-content" class="flex-grow overflow-y-auto p-6 sm:p-10 text-sm sm:text-base bg-slate-50 custom-scrollbar"></div>
+    </div>
+
+    <!-- Mobile Palette Sidebar -->
+    <div id="palette-backdrop" class="hidden fixed inset-0 bg-slate-900/50 z-30 lg:hidden backdrop-blur-sm transition-opacity"></div>
+    <div id="palette-sidebar" class="fixed inset-y-0 right-0 w-72 bg-white shadow-2xl z-40 transform translate-x-full transition-transform duration-300 lg:hidden flex flex-col">
+        <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+            <span class="font-bold text-slate-800 flex items-center gap-2"><i class="fas fa-th"></i> Question Palette</span>
+            <button id="btn-close-palette" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times text-xl"></i></button>
+        </div>
+        <div class="p-4 grid grid-cols-2 gap-3 text-[10px] font-bold text-slate-600 border-b border-slate-100">
+             <div class="flex items-center gap-2"><span class="w-3 h-3 bg-green-500 rounded-sm"></span> Answered</div>
+             <div class="flex items-center gap-2"><span class="w-3 h-3 bg-red-500 rounded-sm"></span> Not Ans</div>
+             <div class="flex items-center gap-2"><span class="w-3 h-3 bg-purple-500 rounded-full"></span> Marked</div>
+             <div class="flex items-center gap-2"><span class="w-3 h-3 border border-slate-400 rounded-sm"></span> Visit</div>
+        </div>
+        <div class="flex-grow overflow-y-auto p-5 bg-slate-50/50">
+             <div id="question-grid-mobile" class="grid grid-cols-5 gap-3"></div>
+        </div>
+    </div>
+
+    <!-- Orientation Overlay -->
+    <div id="orientation-overlay" class="hidden fixed inset-0 bg-slate-900 z-[100] flex flex-col items-center justify-center text-white p-10 text-center backdrop-blur-xl">
+        <i class="fas fa-mobile-alt text-5xl mb-6 animate-spin-slow text-blue-400"></i>
+        <h2 class="text-2xl font-bold mb-2">Rotate Your Device</h2>
+        <p class="text-slate-400">We recommend using landscape mode for the best exam experience.</p>
+    </div>
+
+    <script>
+    (function() {
+        "use strict";
+
+        // 1. OBFUSCATION UTILS
+        const SALT = "SSC_SECURE_2025_SALT_"; 
+        const obfuscate = (str) => btoa(SALT + encodeURIComponent(str));
+        const deobfuscate = (str) => decodeURIComponent(atob(str).replace(SALT, ''));
+        
+        // --- DATA CONFIGURATION ---
+        const EXAM_DATABASE = {
+            "profit_loss_60_full_quiz": {
+    meta: {
+        title: "Profit & Loss Mastery: Easy to Hard",
+        durationMinutes: 90,
+        positiveMarks: 1,
+        negativeMarks: -0.25
+    },
+    questions: [
+        {
+            section: "Profit & Loss",
+            content: "In Profit and Loss, what percentage is the Cost Price (CP) always assumed to be?",
+            options: ["100%", "0%", "The Selling Price value", "Depends on the profit"],
+            answerHash: obfuscate("0")
+        },
+        {
+            section: "Profit & Loss",
+            content: "If an article is sold at a 20% profit, what is the Selling Price (SP) in terms of percentage?",
+            options: ["120%", "80%", "100%", "20%"],
+            answerHash: obfuscate("0")
+        },
+        {
+            section: "Profit & Loss",
+            content: "A pen is bought for $50 and sold for $60. What is the profit?",
+            options: ["$5", "$10", "$20", "$110"],
+            answerHash: obfuscate("1")
+        },
+        {
+            section: "Profit & Loss",
+            content: "A book is bought for $100 and sold for $80. What is the loss percentage?",
+            options: ["25%", "10%", "20%", "80%"],
+            answerHash: obfuscate("2")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Cost Price = $500, Profit = 10%. Find the Selling Price.",
+            options: ["$510", "$550", "$450", "$600"],
+            answerHash: obfuscate("1")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Cost Price = $200, Loss = 20%. Find the Selling Price.",
+            options: ["$160", "$180", "$220", "$40"],
+            answerHash: obfuscate("0")
+        },
+        {
+            section: "Profit & Loss",
+            content: "If Selling Price is $120 and Profit is $20, what is the Cost Price?",
+            options: ["$140", "$120", "$100", "$80"],
+            answerHash: obfuscate("2")
+        },
+        {
+            section: "Profit & Loss",
+            content: "The ratio of CP to SP is 4:5. What is the profit percentage?",
+            options: ["20%", "25%", "10%", "50%"],
+            answerHash: obfuscate("1")
+        },
+        {
+            section: "Profit & Loss",
+            content: "The ratio of CP to SP is 10:9. What is the result?",
+            options: ["10% Profit", "9% Loss", "10% Loss", "11% Profit"],
+            answerHash: obfuscate("2")
+        },
+        {
+            section: "Profit & Loss",
+            content: "A man buys a toy for $25 and sells it for $30. Find the gain percent.",
+            options: ["25%", "20%", "15%", "5%"],
+            answerHash: obfuscate("1")
+        },
+        {
+            section: "Profit & Loss",
+            content: "If a man loses 10% by selling an article for $450, what was the CP?",
+            options: ["$495", "$500", "$405", "$550"],
+            answerHash: obfuscate("1")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Find the SP if CP is $1000 and Gain is 25%.",
+            options: ["$1200", "$1025", "$1250", "$750"],
+            answerHash: obfuscate("2")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Cost Price is $80, Selling Price is $60. Loss percentage is?",
+            options: ["20%", "30%", "33%", "25%"],
+            answerHash: obfuscate("3")
+        },
+        {
+            section: "Profit & Loss",
+            content: "If SP is double the CP, what is the profit %?",
+            options: ["50%", "100%", "200%", "0%"],
+            answerHash: obfuscate("1")
+        },
+        {
+            section: "Profit & Loss",
+            content: "A trader gains 10% on an item bought for $150. How much is the profit amount?",
+            options: ["$10", "$15", "$20", "$150"],
+            answerHash: obfuscate("1")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Buy 5 apples for $50. Sell 1 apple for $12. Profit %?",
+            options: ["12%", "10%", "20%", "2%"],
+            answerHash: obfuscate("2")
+        },
+        {
+            section: "Profit & Loss",
+            content: "A man buys a cycle for $1400 and sells it at a loss of 15%. What is the SP?",
+            options: ["$1190", "$1200", "$1000", "$1250"],
+            answerHash: obfuscate("0")
+        },
+        {
+            section: "Profit & Loss",
+            content: "What is 10% profit on a Cost Price of $550?",
+            options: ["$50", "$55", "$5.5", "$10"],
+            answerHash: obfuscate("1")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Bought for $500, spent $50 on repairs, sold for $660. Profit %?",
+            options: ["32%", "10%", "15%", "20%"],
+            answerHash: obfuscate("3")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Which is better for the seller? Selling CP $100 at 10% profit or Selling CP $100 at $15 profit?",
+            options: ["10% Profit", "Both are same", "$15 Profit", "Cannot be determined"],
+            answerHash: obfuscate("2")
+        },
+        {
+            section: "Profit & Loss",
+            content: "A shopkeeper sells an article at a loss of 10%. If he sold it for $20 more, he would gain 10%. What is the CP?",
+            options: ["$100", "$200", "$50", "$150"],
+            answerHash: obfuscate("0")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Profit changes from 5% to 10% when SP increases by $25. Find CP.",
+            options: ["$250", "$500", "$1000", "$100"],
+            answerHash: obfuscate("1")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Loss changes from 15% to 5% when price is increased by $40. Find CP.",
+            options: ["$200", "$800", "$400", "$40"],
+            answerHash: obfuscate("2")
+        },
+        {
+            section: "Profit & Loss",
+            content: "By selling an article for $360, loss is 10%. Find CP.",
+            options: ["$396", "$400", "$330", "$450"],
+            answerHash: obfuscate("1")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Sold for $480, gain 20%. Find CP.",
+            options: ["$576", "$400", "$384", "$420"],
+            answerHash: obfuscate("1")
+        },
+        {
+            section: "Profit & Loss",
+            content: "An article is sold at $240 at a loss of 20%. At what price should it be sold to gain 20%?",
+            options: ["$300", "$288", "$360", "$400"],
+            answerHash: obfuscate("2")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Sold for $600 at 20% profit. Price to sell for 30% profit?",
+            options: ["$630", "$650", "$700", "$500"],
+            answerHash: obfuscate("1")
+        },
+        {
+            section: "Profit & Loss",
+            content: "The Cost Price of 10 items equals the Selling Price of 8 items. Profit %?",
+            options: ["20%", "25%", "10%", "30%"],
+            answerHash: obfuscate("1")
+        },
+        {
+            section: "Profit & Loss",
+            content: "CP of 15 articles is equal to SP of 12 articles. Gain %?",
+            options: ["20%", "15%", "33.33%", "25%"],
+            answerHash: obfuscate("3")
+        },
+        {
+            section: "Profit & Loss",
+            content: "A person buys 6 for $5 and sells 5 for $6. Profit %?",
+            options: ["20%", "44%", "30%", "11%"],
+            answerHash: obfuscate("1")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Buys 10 for $11, sells 11 for $10. Loss %?",
+            options: ["10%", "17.3%", "21%", "11%"],
+            answerHash: obfuscate("1")
+        },
+        {
+            section: "Profit & Loss",
+            content: "By selling 33m of cloth, one gains the selling price of 11m. Gain %?",
+            options: ["33.33%", "25%", "50%", "11%"],
+            answerHash: obfuscate("2")
+        },
+        {
+            section: "Profit & Loss",
+            content: "If CP is 90% of SP, what is the profit %?",
+            options: ["10%", "11.11%", "9%", "15%"],
+            answerHash: obfuscate("1")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Selling Price is 150% of Cost Price. Profit %?",
+            options: ["150%", "100%", "25%", "50%"],
+            answerHash: obfuscate("3")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Two items sold at $100 each. One gains 10%, one loses 10%. Net effect?",
+            options: ["No gain No loss", "1% Profit", "1% Loss", "2% Loss"],
+            answerHash: obfuscate("2")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Two items bought for $100 each. One sold at 10% gain, one 10% loss. Net?",
+            options: ["1% Loss", "No gain No loss", "1% Gain", "20% Gain"],
+            answerHash: obfuscate("1")
+        },
+        {
+            section: "Profit & Loss",
+            content: "A merchant sells 1/3 of goods at 10% profit, 1/3 at 20% profit, rest at 30% profit. Average profit?",
+            options: ["10%", "25%", "60%", "20%"],
+            answerHash: obfuscate("3")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Rice at $10/kg mixed with Rice at $20/kg in 1:1 ratio. CP of mixture?",
+            options: ["$12", "$18", "$15", "$14"],
+            answerHash: obfuscate("2")
+        },
+        {
+            section: "Profit & Loss",
+            content: "If SP of 50 articles is equal to CP of 40 articles. Loss %?",
+            options: ["25%", "20%", "10%", "50%"],
+            answerHash: obfuscate("1")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Marked Price is $100. Discount 10%. Profit is 10%. Find CP.",
+            options: ["$80", "$90", "$81.81", "$100"],
+            answerHash: obfuscate("2")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Dishonest dealer sells at Cost Price but uses 900g weight instead of 1kg. Gain %?",
+            options: ["10%", "12%", "9%", "11.11%"],
+            answerHash: obfuscate("3")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Uses 800g for 1kg. Gain %?",
+            options: ["20%", "25%", "30%", "40%"],
+            answerHash: obfuscate("1")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Sells at 10% profit AND uses 900g for 1kg. Net profit?",
+            options: ["21%", "20%", "22.22%", "11.11%"],
+            answerHash: obfuscate("2")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Successive discounts of 10% and 20%. Single equivalent discount?",
+            options: ["30%", "32%", "28%", "25%"],
+            answerHash: obfuscate("2")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Buy 4 Get 1 Free. Discount %?",
+            options: ["25%", "10%", "15%", "20%"],
+            answerHash: obfuscate("3")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Buy 3 Get 2 Free. Discount %?",
+            options: ["66.6%", "40%", "50%", "20%"],
+            answerHash: obfuscate("1")
+        },
+        {
+            section: "Profit & Loss",
+            content: "A sells to B at 10% profit. B sells to C at 20% profit. C pays $132. Find A's CP.",
+            options: ["$110", "$100", "$120", "$90"],
+            answerHash: obfuscate("1")
+        },
+        {
+            section: "Profit & Loss",
+            content: "A sells to B at 20% loss, B to C at 25% profit. Net result A to C?",
+            options: ["No loss No gain", "5% Profit", "5% Loss", "10% Loss"],
+            answerHash: obfuscate("0")
+        },
+        {
+            section: "Profit & Loss",
+            content: "A 20% reduction in price allows buying 5kg more for $100. New Price per kg?",
+            options: ["$5", "$20", "$4", "$2"],
+            answerHash: obfuscate("2")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Same Q. Original Price?",
+            options: ["$4", "$5", "$6", "$4.5"],
+            answerHash: obfuscate("1")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Man sells at 12% loss. Sold for $100 more, gains 8%. CP?",
+            options: ["$1000", "$400", "$500", "$250"],
+            answerHash: obfuscate("2")
+        },
+        {
+            section: "Profit & Loss",
+            content: "CP increases by 10%, SP remains same. Profit 20% becomes?",
+            options: ["10%", "20%", "15%", "9.09%"],
+            answerHash: obfuscate("3")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Half sold at 20% profit, half at 20% loss. Net result?",
+            options: ["4% Loss", "1% Loss", "10% Profit", "0%"],
+            answerHash: obfuscate("3")
+        },
+        {
+            section: "Profit & Loss",
+            content: "2/3 goods sold at 5% profit, 1/3 at 2% loss. Total profit $400. Value of goods?",
+            options: ["$12000", "$15000", "$10000", "$20000"],
+            answerHash: obfuscate("1")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Dealer sells at CP but uses 960g weight. Gain %?",
+            options: ["4%", "5%", "4.16%", "10%"],
+            answerHash: obfuscate("2")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Sold 2 watches for $990 each. One +10%, One -10%. Total Loss in $?",
+            options: ["$0", "$10", "$20", "$100"],
+            answerHash: obfuscate("2")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Ratio CP:SP is a:b. b is 200% of a. Profit?",
+            options: ["200%", "50%", "150%", "100%"],
+            answerHash: obfuscate("3")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Manufacturer gains 10%, Wholesaler 15%, Retailer 25%. Customer pays $1265. Cost?",
+            options: ["$1000", "$900", "$800", "$750"],
+            answerHash: obfuscate("2")
+        },
+        {
+            section: "Profit & Loss",
+            content: "Tea worth $126 and $135 mixed with third variety in 1:1:2. Mix worth $153. Price of 3rd?",
+            options: ["$180", "$175.5", "$170", "$160"],
+            answerHash: obfuscate("1")
+        },
+        {
+            section: "Profit & Loss",
+            content: "A tradesman marks goods 30% above CP and allows 10% discount. Gain %?",
+            options: ["20%", "17%", "13%", "30%"],
+            answerHash: obfuscate("1")
+        }
+    ]
+},
+            
+        };
+
+        // 4. APPLICATION STATE
+        const STATE = {
+            paper: null,
+            sectionIndex: 0,
+            questionGlobalIndex: 0,
+            answers: {},
+            timeRemaining: 0,
+            timerInterval: null,
+            flatQuestions: [],
+            warnings: 0,
+            fontSize: 1
+        };
+        
+        const SESSION_KEY = 'exam_session_custom'; 
+        const HISTORY_KEY = 'exam_history_custom';
+
+        const Security = {
+            init: function() { window.EXAM_SCORE = 0; },
+            encryptStorage: function(data) { return obfuscate(JSON.stringify(data)); },
+            decryptStorage: function(rawStr) { try { if(!rawStr) return null; return JSON.parse(deobfuscate(rawStr)); } catch(e) { return null; } }
+        };
+
+        // 6. INITIALIZATION
+        document.addEventListener('DOMContentLoaded', () => {
+            Security.init();
+            setupEventListeners();
+            renderPaperGrid();
+            checkPreviousSession();
+            window.addEventListener('resize', () => checkOrientation());
+            window.addEventListener('beforeunload', (e) => {
+                if(!document.getElementById('screen-exam').classList.contains('hidden')) { e.preventDefault(); e.returnValue = ''; }
+            });
+        });
+
+        // 7. EVENT LISTENERS
+        function setupEventListeners() {
+            document.getElementById('resume-alert').onclick = resumeExamSession;
+            document.getElementById('btn-close-inst').onclick = () => {
+                document.getElementById('screen-instructions').classList.add('hidden');
+                document.getElementById('screen-setup').classList.remove('hidden');
+            };
+            document.getElementById('btn-start-exam').onclick = confirmInstructions;
+            document.getElementById('btn-show-qp').onclick = showQuestionPaper;
+            document.getElementById('btn-close-qp').onclick = () => document.getElementById('modal-qp').classList.add('hidden');
+            document.getElementById('btn-font-inc').onclick = () => resizeFont(1);
+            document.getElementById('btn-font-dec').onclick = () => resizeFont(-1);
+            document.getElementById('btn-palette-mob').onclick = togglePaletteMobile;
+            document.getElementById('palette-backdrop').onclick = togglePaletteMobile;
+            document.getElementById('btn-close-palette').onclick = togglePaletteMobile;
+            document.getElementById('btn-prev').onclick = prevQuestion;
+            document.getElementById('btn-next').onclick = saveAndNext;
+            document.getElementById('btn-clear').onclick = clearResponse;
+            document.getElementById('btn-review').onclick = markForReview;
+            document.getElementById('btn-submit-main').onclick = () => document.getElementById('modal-submit').classList.remove('hidden');
+            document.getElementById('btn-cancel-submit').onclick = () => document.getElementById('modal-submit').classList.add('hidden');
+            document.getElementById('btn-confirm-submit').onclick = finishExam;
+            document.getElementById('btn-retake').onclick = retakeTest;
+            document.getElementById('btn-home').onclick = clearSessionAndHome;
+            document.getElementById('btn-resume-warning').onclick = resumeExam;
+        }
+
+        // 8. LOGIC
+        function getPaperOrder() { return Object.keys(EXAM_DATABASE); }
+
+        function renderPaperGrid() {
+            const grid = document.getElementById('paper-grid');
+            const keys = getPaperOrder();
+            let history = {};
+            try {
+                const rawHist = localStorage.getItem(HISTORY_KEY);
+                if (rawHist) history = Security.decryptStorage(rawHist) || {};
+            } catch (e) { }
+            
+            grid.innerHTML = keys.map((key, index) => {
+                const data = EXAM_DATABASE[key];
+                const prev = history[key];
+                
+                // Color Logic based on index for variety
+                const colors = ['from-blue-500 to-cyan-500', 'from-purple-500 to-indigo-500', 'from-emerald-500 to-teal-500', 'from-orange-500 to-amber-500'];
+                const grad = colors[index % colors.length];
+
+                if (prev) {
+                    return `
+                    <div class="bg-white border border-slate-200 rounded-2xl p-6 relative group overflow-hidden shadow-card hover:shadow-xl transition transform hover:-translate-y-1">
+                        <div class="absolute top-0 right-0 bg-green-100 text-green-700 text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-wider">Completed</div>
+                        <div class="mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br ${grad} flex items-center justify-center text-white text-xl font-bold shadow-md mb-3">
+                                ${data.meta.title.charAt(0)}
+                            </div>
+                            <h3 class="text-slate-800 text-xl font-bold mb-1">${data.meta.title}</h3>
+                            <p class="text-slate-400 text-xs font-medium"><i class="far fa-clock mr-1"></i> ${data.meta.durationMinutes} Minutes</p>
+                        </div>
+                        <div class="mb-5 bg-slate-50 rounded-xl p-3 border border-slate-100 flex justify-between items-center">
+                            <span class="text-slate-400 text-xs font-bold uppercase">Score</span>
+                            <div class="flex items-baseline gap-1">
+                                <span class="text-2xl font-black ${prev.percentage >= 40 ? 'text-green-500' : 'text-red-500'}">${prev.score}</span>
+                                <span class="text-xs text-slate-400 font-bold">/ ${prev.totalMarks}</span>
+                            </div>
+                        </div>
+                        <button data-key="${key}" class="w-full py-2.5 bg-white border-2 border-blue-600 text-blue-600 hover:bg-blue-50 text-sm font-bold rounded-xl transition">Retake Test</button>
+                    </div>`;
+                } else {
+                    return `
+                    <div class="bg-white border border-slate-200 rounded-2xl p-6 hover:shadow-xl transition transform hover:-translate-y-1 cursor-pointer group relative overflow-hidden flex flex-col h-full" data-key="${key}">
+                        <div class="absolute top-0 right-0 bg-blue-50 text-blue-600 text-[10px] font-bold px-3 py-1 rounded-bl-xl border-l border-b border-blue-100">NEW</div>
+                        <div class="flex-grow">
+                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br ${grad} flex items-center justify-center text-white text-xl font-bold shadow-md mb-4 group-hover:scale-110 transition duration-300">
+                                ${data.meta.title.charAt(0)}
+                            </div>
+                            <h3 class="text-slate-800 text-xl font-bold mb-2 group-hover:text-blue-600 transition">${data.meta.title}</h3>
+                            <p class="text-slate-500 text-sm mb-4 leading-relaxed">Full syllabus mock test based on latest pattern.</p>
+                            <div class="flex items-center gap-3 text-xs text-slate-400 font-medium mb-6">
+                                <span class="bg-slate-100 px-2 py-1 rounded"><i class="far fa-clock mr-1"></i> ${data.meta.durationMinutes}m</span>
+                                <span class="bg-slate-100 px-2 py-1 rounded"><i class="fas fa-list-ul mr-1"></i> Full Test</span>
+                            </div>
+                        </div>
+                        <div class="w-full bg-slate-900 text-white text-center py-3 rounded-xl text-sm font-bold group-hover:bg-blue-600 transition shadow-lg shadow-slate-200">Start Attempt <i class="fas fa-arrow-right ml-1 text-xs opacity-70"></i></div>
+                    </div>`;
+                }
+            }).join('');
+            
+            grid.querySelectorAll('[data-key]').forEach(el => {
+                el.onclick = (e) => {
+                    let key = el.getAttribute('data-key');
+                    if(!key) key = e.target.closest('[data-key]').getAttribute('data-key');
+                    preparePaper(key);
+                };
+            });
+        }
+
+        function generatePaperFromKey(key) {
+            const raw = EXAM_DATABASE[key];
+            if(!raw) return null;
+            
+            const sectionsMap = {};
+            const sectionOrder = [];
+            
+            raw.questions.forEach((q, idx) => {
+                if(!sectionsMap[q.section]) {
+                    sectionsMap[q.section] = [];
+                    sectionOrder.push(q.section);
+                }
+                sectionsMap[q.section].push({
+                    id: `${key}_q_${idx}`,
+                    type: 'MCQ',
+                    sectionName: q.section,
+                    content: q.content,
+                    options: q.options,
+                    answerHash: q.answerHash
+                });
+            });
+
+            const sections = sectionOrder.map(name => ({ name: name, questions: sectionsMap[name] }));
+
+            return {
+                id: key,
+                title: raw.meta.title,
+                durationMinutes: raw.meta.durationMinutes,
+                positiveMarks: raw.meta.positiveMarks,
+                negativeMarks: raw.meta.negativeMarks,
+                sections: sections
+            };
+        }
+
+        function preparePaper(key) {
+            STATE.paper = generatePaperFromKey(key);
+            document.getElementById('inst-paper-name').innerText = STATE.paper.title;
+            const list = document.getElementById('inst-details-list');
+            list.innerHTML = `
+                <li><strong>Duration:</strong> ${STATE.paper.durationMinutes} Minutes</li>
+                <li><strong>Total Sections:</strong> ${STATE.paper.sections.length}</li>
+                <li><strong>Marking:</strong> <span class="text-green-600">+${STATE.paper.positiveMarks}</span> / <span class="text-red-500">${STATE.paper.negativeMarks}</span></li>
+            `;
+            document.getElementById('screen-setup').classList.add('hidden');
+            document.getElementById('screen-instructions').classList.remove('hidden');
+        }
+
+        function requestFullScreen() {
+            const docEl = document.documentElement;
+            if (docEl.requestFullscreen) docEl.requestFullscreen().catch(() => {});
+            else if (docEl.mozRequestFullScreen) docEl.mozRequestFullScreen();
+            else if (docEl.webkitRequestFullscreen) docEl.webkitRequestFullscreen();
+            else if (docEl.msRequestFullscreen) docEl.msRequestFullscreen();
+        }
+
+        function confirmInstructions() { 
+            const chk = document.getElementById('agree-chk');
+            if(!chk.checked) { alert("Please agree to the instructions first."); return; }
+            requestFullScreen();
+            startExam(); 
+        }
+        function checkPreviousSession() { if(localStorage.getItem(SESSION_KEY)) document.getElementById('resume-alert').classList.remove('hidden'); }
+        
+        function resumeExamSession() {
+            const savedRaw = localStorage.getItem(SESSION_KEY);
+            if(!savedRaw) return;
+            const saved = Security.decryptStorage(savedRaw);
+            if(!saved) { alert("Session corrupted"); localStorage.removeItem(SESSION_KEY); return; }
+            Object.assign(STATE, saved);
+            
+            STATE.flatQuestions = [];
+            STATE.paper.sections.forEach((sec, sIdx) => {
+                sec.questions.forEach((q, qIdx) => {
+                    STATE.flatQuestions.push({ ...q, sectionIndex: sIdx, localIndex: qIdx, sectionName: sec.name });
+                });
+            });
+
+            document.getElementById('screen-setup').classList.add('hidden');
+            document.getElementById('screen-instructions').classList.add('hidden');
+            document.getElementById('screen-exam').classList.remove('hidden');
+            document.getElementById('screen-exam').classList.add('flex');
+            document.getElementById('exam-name-display').innerText = STATE.paper.title;
+            
+            document.getElementById('mark-pos').innerText = `${STATE.paper.positiveMarks}`;
+            document.getElementById('mark-neg').innerText = `${Math.abs(STATE.paper.negativeMarks)}`;
+
+            requestFullScreen();
+            enableProctoring();
+            checkOrientation();
+            renderSubjectTabs();
+            startTimer();
+            loadQuestion(saved.questionGlobalIndex);
+        }
+
+        function startExam() {
+            STATE.timeRemaining = STATE.paper.durationMinutes * 60;
+            STATE.warnings = 0;
+            STATE.answers = {};
+            STATE.flatQuestions = [];
+            STATE.fontSize = 1;
+
+            STATE.paper.sections.forEach((sec, sIdx) => {
+                for (let i = sec.questions.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [sec.questions[i], sec.questions[j]] = [sec.questions[j], sec.questions[i]];
+                }
+                sec.questions.forEach((q, qIdx) => {
+                    STATE.flatQuestions.push({ ...q, sectionIndex: sIdx, localIndex: qIdx, sectionName: sec.name });
+                    STATE.answers[q.id] = { value: null, status: 'not-visited' };
+                });
+            });
+
+            document.getElementById('screen-instructions').classList.add('hidden');
+            document.getElementById('screen-exam').classList.remove('hidden');
+            document.getElementById('screen-exam').classList.add('flex');
+            document.getElementById('exam-name-display').innerText = STATE.paper.title;
+            document.getElementById('mark-pos').innerText = `${STATE.paper.positiveMarks}`;
+            document.getElementById('mark-neg').innerText = `${Math.abs(STATE.paper.negativeMarks)}`;
+
+            generateWatermark();
+            enableProctoring();
+            checkOrientation();
+            renderSubjectTabs();
+            startTimer();
+            loadQuestion(0);
+            saveSession();
+        }
+
+        function loadQuestion(index) {
+            if(index < 0 || index >= STATE.flatQuestions.length) return;
+            STATE.questionGlobalIndex = index;
+            const q = STATE.flatQuestions[index];
+            STATE.sectionIndex = q.sectionIndex;
+
+            document.querySelectorAll('#subject-tabs button').forEach((btn, idx) => {
+                const isActive = idx === q.sectionIndex;
+                btn.className = isActive 
+                    ? "whitespace-nowrap px-5 py-2 rounded-full text-xs font-bold transition bg-slate-800 text-white shadow-lg shadow-slate-300 ring-2 ring-slate-100" 
+                    : "whitespace-nowrap px-5 py-2 rounded-full text-xs font-bold transition bg-white text-slate-500 border border-slate-200 hover:bg-slate-50 hover:text-slate-700";
+            });
+
+            const ans = STATE.answers[q.id];
+            if(ans.status === 'not-visited') ans.status = 'not-answered';
+
+            document.getElementById('q-num').innerText = q.localIndex + 1;
+            document.getElementById('section-badge').innerText = q.sectionName;
+            
+            const contentDiv = document.getElementById('question-text');
+            contentDiv.innerHTML = q.content;
+            contentDiv.style.fontSize = `${STATE.fontSize}rem`;
+
+            const optsDiv = document.getElementById('options-area');
+            optsDiv.innerHTML = '';
+            optsDiv.style.fontSize = `${STATE.fontSize}rem`;
+
+            q.options.forEach((opt, i) => {
+                const isSel = ans.value === i;
+                const optEl = document.createElement('div');
+                optEl.className = `option-card relative p-4 sm:p-5 rounded-xl cursor-pointer flex items-start gap-4 ${isSel ? 'selected' : 'bg-white hover:border-blue-400'}`;
+                optEl.innerHTML = `
+                    <div class="h-6 w-6 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors ${isSel ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-300 text-slate-400'}">
+                        <span class="text-xs font-bold">${String.fromCharCode(65+i)}</span>
+                    </div>
+                    <div class="text-slate-700 font-medium leading-relaxed">${opt}</div>
+                `;
+                optEl.onclick = () => selectOption(i);
+                optsDiv.appendChild(optEl);
+            });
+
+            renderPalette();
+            if (typeof renderMathInElement !== 'undefined') {
+                renderMathInElement(document.getElementById('question-container'), { 
+                    delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}, {left: "\\(", right: "\\)", display: false}, {left: "\\[", right: "\\]", display: true}],
+                    throwOnError: false
+                });
+            }
+            
+            document.getElementById('btn-prev').disabled = index === 0;
+            document.getElementById('btn-prev').className = index === 0 ? "px-6 py-2.5 bg-slate-50 text-slate-300 rounded-lg cursor-not-allowed text-sm font-bold" : "px-6 py-2.5 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 text-sm font-bold transition";
+            document.getElementById('btn-next').innerText = index === STATE.flatQuestions.length - 1 ? 'Save & Submit' : 'Save & Next';
+            saveSession(); 
+        }
+
+        function selectOption(idx) { STATE.answers[STATE.flatQuestions[STATE.questionGlobalIndex].id].value = idx; loadQuestion(STATE.questionGlobalIndex); }
+        
+        function saveAndNext() {
+            const ans = STATE.answers[STATE.flatQuestions[STATE.questionGlobalIndex].id];
+            if(ans.value !== null && ans.value !== "") ans.status = (ans.status.includes('marked')) ? 'marked-answered' : 'answered';
+            else if(!ans.status.includes('marked')) ans.status = 'not-answered';
+            
+            if(STATE.questionGlobalIndex < STATE.flatQuestions.length - 1) loadQuestion(STATE.questionGlobalIndex + 1);
+            else document.getElementById('modal-submit').classList.remove('hidden');
+        }
+        
+        function prevQuestion() { loadQuestion(STATE.questionGlobalIndex - 1); }
+        
+        function markForReview() {
+            const ans = STATE.answers[STATE.flatQuestions[STATE.questionGlobalIndex].id];
+            ans.status = (ans.value !== null && ans.value !== "") ? 'marked-answered' : 'marked';
+            if(STATE.questionGlobalIndex < STATE.flatQuestions.length - 1) loadQuestion(STATE.questionGlobalIndex + 1);
+            else renderPalette(); // Just refresh if last
+        }
+        
+        function clearResponse() {
+            const ans = STATE.answers[STATE.flatQuestions[STATE.questionGlobalIndex].id];
+            ans.value = null; ans.status = 'not-answered';
+            loadQuestion(STATE.questionGlobalIndex);
+        }
+        function resizeFont(d) { STATE.fontSize = Math.min(1.5, Math.max(0.8, STATE.fontSize + d * 0.1)); loadQuestion(STATE.questionGlobalIndex); }
+
+        function renderPalette() {
+            const questions = STATE.flatQuestions.filter(q => q.sectionIndex === STATE.sectionIndex);
+            document.getElementById('palette-section-title').innerText = questions[0].sectionName;
+            
+            const renderGrid = (containerId) => {
+                const container = document.getElementById(containerId);
+                if(!container) return;
+                container.innerHTML = questions.map(q => {
+                    const ans = STATE.answers[q.id];
+                    let cls = "status-btn ";
+                    if(STATE.questionGlobalIndex === STATE.flatQuestions.indexOf(q)) cls += "st-current ";
+                    if(ans.status === 'answered') cls += "st-answered";
+                    else if(ans.status === 'not-answered') cls += "st-not-answered";
+                    else if(ans.status === 'marked') cls += "st-marked";
+                    else if(ans.status === 'marked-answered') cls += "st-marked-answered";
+                    else cls += "st-not-visited";
+                    
+                    return `<div data-idx="${STATE.flatQuestions.indexOf(q)}" class="${cls}">${q.localIndex + 1}</div>`;
+                }).join('');
+                
+                container.querySelectorAll('div').forEach(el => {
+                    el.onclick = () => {
+                        loadQuestion(parseInt(el.getAttribute('data-idx')));
+                        if(window.innerWidth < 1024) togglePaletteMobile(); 
+                    };
+                });
+            };
+            renderGrid('question-grid');
+            renderGrid('question-grid-mobile');
+        }
+
+        function renderSubjectTabs() {
+            document.getElementById('subject-tabs').innerHTML = STATE.paper.sections.map((sec, idx) => `
+                <button data-sec="${idx}" class="whitespace-nowrap px-5 py-2 rounded-full text-xs font-bold transition bg-white text-slate-500 border border-slate-200 hover:bg-slate-50 hover:text-slate-700">${sec.name}</button>
+            `).join('');
+            document.querySelectorAll('#subject-tabs button').forEach(el => { el.onclick = () => switchSection(parseInt(el.getAttribute('data-sec'))); });
+        }
+
+        function switchSection(secIdx) {
+            const idx = STATE.flatQuestions.findIndex(q => q.sectionIndex === secIdx);
+            if(idx !== -1) loadQuestion(idx);
+        }
+
+        function finishExam() {
+            clearInterval(STATE.timerInterval);
+            disableProctoring();
+            localStorage.removeItem(SESSION_KEY);
+            document.getElementById('screen-exam').classList.add('hidden');
+            document.getElementById('modal-submit').classList.add('hidden');
+            document.getElementById('screen-result').classList.remove('hidden');
+
+            let score = 0, correct = 0, wrong = 0, totalMarks = 0;
+            let tbody = document.getElementById('result-table-body');
+            tbody.innerHTML = '';
+            
+            STATE.flatQuestions.forEach((q, idx) => {
+                const ans = STATE.answers[q.id];
+                let rowClass = "hover:bg-slate-50 transition", userDisp = "Not Attempted", resultStatus = "";
+                const correctHash = q.answerHash;
+                
+                totalMarks += STATE.paper.positiveMarks;
+
+                if (ans.value !== null && ans.value !== "") {
+                    const userHash = obfuscate(String(ans.value));
+                    userDisp = q.options[ans.value];
+                    if (userHash === correctHash) {
+                        score += STATE.paper.positiveMarks; 
+                        correct++; 
+                        resultStatus = "<span class='inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800'><i class='fas fa-check mr-1'></i> Correct</span>"; 
+                    } else {
+                        score += STATE.paper.negativeMarks; 
+                        wrong++; 
+                        resultStatus = "<span class='inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800'><i class='fas fa-times mr-1'></i> Incorrect</span>"; 
+                    }
+                } else {
+                    resultStatus = "<span class='inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600'>Unattempted</span>";
+                }
+
+                const trunc = (str) => String(str).length > 50 ? String(str).substring(0,50)+'...' : str;
+                tbody.innerHTML += `
+                <tr class="border-b border-slate-50 ${rowClass}">
+                    <td class="p-5 font-mono text-xs text-slate-400 font-bold">${idx+1}</td>
+                    <td class="p-5">${resultStatus}</td>
+                    <td class="p-5 text-slate-700 font-medium text-sm">${trunc(userDisp)}</td>
+                </tr>`;
+            });
+
+            document.getElementById('res-score').innerText = score.toFixed(2);
+            document.getElementById('res-correct').innerText = correct;
+            document.getElementById('res-wrong').innerText = wrong;
+            document.getElementById('res-exam-title').innerText = STATE.paper.title;
+            document.getElementById('res-total-marks').innerText = `/ ${totalMarks}`;
+            
+            // Render Math in Results
+            if (typeof renderMathInElement !== 'undefined') {
+                renderMathInElement(tbody, { 
+                    delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}],
+                    throwOnError: false 
+                });
+            }
+
+            const percent = Math.max(0, Math.min(100, (score / totalMarks) * 100));
+            const dash = `${percent}, 100`;
+            setTimeout(() => {
+                document.getElementById('score-circle').style.strokeDasharray = dash;
+                if(percent >= 40) document.getElementById('score-circle').style.stroke = "#10b981"; 
+                else document.getElementById('score-circle').style.stroke = "#ef4444"; 
+            }, 500);
+
+            try {
+                let hist = {};
+                const rawHist = localStorage.getItem(HISTORY_KEY);
+                if (rawHist) hist = Security.decryptStorage(rawHist) || {};
+                hist[STATE.paper.id] = { score: score.toFixed(2), totalMarks, percentage: percent, timestamp: new Date().toISOString() };
+                localStorage.setItem(HISTORY_KEY, Security.encryptStorage(hist));
+            } catch(e) { }
+        }
+
+        function retakeTest() {
+            const pid = STATE.paper.id;
+            localStorage.removeItem(SESSION_KEY);
+            document.getElementById('screen-result').classList.add('hidden');
+            preparePaper(pid);
+            confirmInstructions();
+        }
+        
+        function clearSessionAndHome() { localStorage.removeItem(SESSION_KEY); location.reload(); }
+
+        function startTimer() {
+            if(STATE.timerInterval) clearInterval(STATE.timerInterval);
+            STATE.timerInterval = setInterval(() => {
+                STATE.timeRemaining--;
+                saveSession();
+                if(STATE.timeRemaining <= 0) finishExam();
+                const h = Math.floor(STATE.timeRemaining / 3600);
+                const m = Math.floor((STATE.timeRemaining % 3600) / 60);
+                const s = STATE.timeRemaining % 60;
+                document.getElementById('timer-display').innerText = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+                
+                if(STATE.timeRemaining < 300) {
+                    document.getElementById('timer-display').classList.remove('text-slate-800');
+                    document.getElementById('timer-display').classList.add('text-red-500', 'animate-pulse');
+                }
+            }, 1000);
+        }
+
+        function saveSession() {
+            const cleanState = {
+                paper: STATE.paper, timeRemaining: STATE.timeRemaining, answers: STATE.answers,
+                questionGlobalIndex: STATE.questionGlobalIndex, warnings: STATE.warnings
+            };
+            localStorage.setItem(SESSION_KEY, Security.encryptStorage(cleanState));
+        }
+
+        function enableProctoring() {
+            document.addEventListener("visibilitychange", visibilityHandler);
+            window.addEventListener("blur", triggerWarning);
+            document.addEventListener('fullscreenchange', checkFullScreen);
+            document.addEventListener('webkitfullscreenchange', checkFullScreen);
+            document.addEventListener('mozfullscreenchange', checkFullScreen);
+            document.addEventListener('MSFullscreenChange', checkFullScreen);
+        }
+        
+        function disableProctoring() {
+            document.removeEventListener("visibilitychange", visibilityHandler);
+            window.removeEventListener("blur", triggerWarning);
+            document.removeEventListener('fullscreenchange', checkFullScreen);
+            document.removeEventListener('webkitfullscreenchange', checkFullScreen);
+            document.removeEventListener('mozfullscreenchange', checkFullScreen);
+            document.removeEventListener('MSFullscreenChange', checkFullScreen);
+            if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+        }
+        
+        function visibilityHandler() { if(document.hidden) triggerWarning(); }
+
+        function checkFullScreen() {
+            if (!document.fullscreenElement && !document.webkitIsFullScreen && !document.mozFullScreen && !document.msFullscreenElement) {
+                if(!document.getElementById('screen-exam').classList.contains('hidden')) {
+                    triggerWarning();
+                }
+            }
+        }
+        
+        function triggerWarning() {
+            const warningLimit = 3;
+            if(document.getElementById('screen-exam').classList.contains('hidden') || !document.getElementById('modal-warning').classList.contains('hidden')) return;
+            STATE.warnings++;
+            document.getElementById('warning-count').innerText = STATE.warnings;
+            saveSession();
+            if (STATE.warnings > warningLimit) { 
+                disableProctoring(); 
+                alert("Maximum security violations reached. Exam auto-submitted."); 
+                finishExam(); 
+            } 
+            else document.getElementById('modal-warning').classList.remove('hidden');
+        }
+        
+        function resumeExam() { 
+            requestFullScreen();
+            document.getElementById('modal-warning').classList.add('hidden'); 
+        }
+
+        function checkOrientation() {
+            const overlay = document.getElementById('orientation-overlay');
+            if(document.getElementById('screen-exam').classList.contains('hidden')) { overlay.classList.add('hidden'); return; }
+        }
+
+        function generateWatermark() {
+            const c = document.getElementById('exam-watermark');
+            c.innerHTML = "";
+            const now = new Date();
+            const count = 30; 
+            let html = "";
+            for(let i=0; i<count; i++) {
+                html += `<div class="watermark-item"><div>ID: SSC-CANDIDATE</div><div class="text-[10px] opacity-70">${now.toLocaleDateString()} ${now.toLocaleTimeString()}</div></div>`;
+            }
+            c.innerHTML = html;
+            setTimeout(generateWatermark, 60000);
+        }
+
+        function togglePaletteMobile() { 
+            const sb = document.getElementById('palette-sidebar');
+            const bd = document.getElementById('palette-backdrop');
+            
+            if (sb.classList.contains('translate-x-full')) {
+                sb.classList.remove('translate-x-full');
+                bd.classList.remove('hidden');
+            } else {
+                sb.classList.add('translate-x-full');
+                bd.classList.add('hidden');
+            }
+        }
+
+        function showQuestionPaper() {
+            const content = document.getElementById('qp-content');
+            content.innerHTML = STATE.flatQuestions.map((q, idx) => `
+                <div class="mb-8 border-b border-slate-200 pb-6 last:border-0">
+                    <div class="flex justify-between mb-3">
+                        <span class="font-bold text-white bg-slate-800 px-3 py-1 rounded-md text-xs shadow-sm">Q${idx+1}</span>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">${q.sectionName}</span>
+                    </div>
+                    <div class="mb-2 text-slate-800 font-medium leading-relaxed">${q.content}</div>
+                </div>`).join('');
+            
+            if (typeof renderMathInElement !== 'undefined') {
+                renderMathInElement(content, { delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}, {left: "\\(", right: "\\)", display: false}, {left: "\\[", right: "\\]", display: true}], throwOnError: false });
+            }
+            
+            document.getElementById('modal-qp').classList.remove('hidden');
+        }
+
+    })();
+    </script>
+</body>
+</html>
